@@ -4,23 +4,20 @@
 
 ### Descriere
 
-Hush recunoaște o melodie dintr-un fragment audio scurt (câteva secunde), în stilul Shazam:
-primește fragmentul și răspunde ce melodie este și din ce moment al ei provine.
+Hush recunoaște o melodie după un fragment scurt, de câteva secunde. Îi dai fragmentul și îți
+spune ce melodie e și din ce moment al ei a fost luat, cam cum face Shazam.
 
-Abordarea este inspirată din articolul lui Avery Wang, *„An Industrial-Strength Audio Search
-Algorithm”* (2003), care descrie algoritmul din spatele Shazam:
+Ideea vine din articolul lui Avery Wang, „An Industrial-Strength Audio Search Algorithm” (2003),
+în care e explicat algoritmul folosit de Shazam. Pentru fiecare melodie calculăm spectrograma și
+păstrăm doar vârfurile de frecvență cele mai puternice. Din perechi de vârfuri apropiate facem
+hash-uri, pe care le salvăm într-un index împreună cu melodia și momentul în care apar. Când primim
+un fragment, facem același lucru cu el și căutăm melodia ale cărei hash-uri se potrivesc cu ale
+fragmentului la același decalaj în timp.
 
-1. **Amprentare** — pentru fiecare melodie din colecție se calculează spectrograma, se aleg
-   vârfurile de frecvență cele mai puternice, iar perechile de vârfuri apropiate devin hash-uri.
-2. **Indexare** — hash-urile tuturor melodiilor sunt salvate într-un index, împreună cu melodia
-   și momentul în care apar.
-3. **Recunoaștere** — fragmentul este amprentat la fel, iar melodia câștigătoare este cea ale cărei
-   hash-uri se potrivesc cu ale fragmentului la același decalaj în timp.
+Vrem ca recunoașterea să meargă și când fragmentul are zgomot de fundal sau alt volum, așa că o să
+o testăm pe un set de fragmente și o să trecem aici cât de des nimerește melodia.
 
-Ne propunem ca recunoașterea să funcționeze și pe fragmente cu zgomot de fundal sau volum diferit,
-iar rata de recunoaștere să fie măsurată și prezentată pe un set de fragmente de test.
-
-Melodiile folosite sunt cu licență liberă (Creative Commons), citate în secțiunea Resurse.
+Melodiile folosite au licență liberă (Creative Commons) și sunt trecute la Resurse.
 
 ### Important!
 
@@ -221,4 +218,4 @@ The [template repository](https://github.com/mcmarius/oop-template) itself is li
 ## Resurse
 
 - adăugați trimiteri **detaliate** către resursele externe care v-au ajutat sau pe care le-ați folosit
-- Avery Li-Chun Wang, *„An Industrial-Strength Audio Search Algorithm”*, ISMIR 2003 — articolul pe care se bazează algoritmul de recunoaștere: https://www.ee.columbia.edu/~dpwe/papers/Wang03-shazam.pdf
+- Avery Li-Chun Wang, „An Industrial-Strength Audio Search Algorithm”, ISMIR 2003. De aici vine algoritmul de recunoaștere: https://www.ee.columbia.edu/~dpwe/papers/Wang03-shazam.pdf
