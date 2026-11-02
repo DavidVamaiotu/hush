@@ -1,4 +1,17 @@
-# Nu primesc notă pentru că nu am pus titlu și descriere
+# Hush
+
+> *Shh… what song is this?*
+
+### Descriere
+
+Hush recunoaște o melodie dintr-un fragment audio scurt (câteva secunde), în stilul Shazam.
+Aplicația construiește un index de amprente audio pentru o colecție de melodii: calculează
+spectrograma fiecărei melodii, extrage vârfurile de frecvență și le transformă în hash-uri.
+La căutare, fragmentul este amprentat la fel, iar melodia se identifică după hash-urile comune
+care apar la același decalaj în timp. Rezultatul este melodia și momentul din care provine
+fragmentul, chiar și când acesta conține zgomot de fundal.
+
+Melodiile folosite sunt cu licență liberă (Creative Commons), citate în secțiunea Resurse.
 
 ### Folosiți template-ul corespunzător grupei voastre!
 
@@ -33,8 +46,8 @@ O cerință nu se consideră îndeplinită dacă este realizată doar prin cod g
 
 ### Tema 0
 
-- [ ] Nume proiect (poate fi schimbat ulterior)
-- [ ] Scurtă descriere a temei alese, ce v-ați propus să implementați
+- [x] Nume proiect (poate fi schimbat ulterior)
+- [x] Scurtă descriere a temei alese, ce v-ați propus să implementați
 
 ## Tema 1
 
