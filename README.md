@@ -105,6 +105,104 @@ O cerință nu se consideră îndeplinită dacă este realizată doar prin cod g
 - [ ] tag de `git` pe commit cu **toate bifele**: de exemplu `v0.3` sau `v1.0`
 - [ ] code review #3 2 proiecte
 
+## Instrucțiuni de compilare
+
+Proiectul este configurat cu CMake.
+
+Instrucțiuni pentru terminal:
+
+1. Pasul de configurare
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+# sau ./scripts/cmake.sh configure
+```
+
+Sau pe Windows cu GCC folosind Git Bash:
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -G Ninja
+# sau ./scripts/cmake.sh configure -g Ninja
+```
+
+Pentru a configura cu ASan, avem opțiunea `-DUSE_ASAN=ON` (nu merge pe Windows cu GCC):
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DUSE_ASAN=ON
+# sau ./scripts/cmake.sh configure -e "-DUSE_ASAN=ON"
+```
+
+
+La acest pas putem cere să generăm fișiere de proiect pentru diverse medii de lucru.
+
+
+2. Pasul de compilare
+```sh
+cmake --build build --config Debug --parallel 6
+# sau ./scripts/cmake.sh build
+```
+
+Cu opțiunea `parallel` specificăm numărul de fișiere compilate în paralel.
+
+3. Pasul de testare
+```sh
+ctest --test-dir build -C Debug --output-on-failure
+# sau ./scripts/cmake.sh test
+```
+
+Testele sunt **condiție, nu punctaj**: CI verde include și testele. Nu se punctează nici numărul
+lor, nici acoperirea (coverage). Testați logica de domeniu din `src/`, prin interfața publică din
+`include/`, fără `std::cin` și fără căi absolute. Ce e greu de testat — UI complex, evenimente
+aleatoare, un server real — rămâne în `app/` și se verifică prin smoke tests și la demo.
+
+4. Pasul de instalare (opțional)
+```sh
+cmake --install build --config Debug --prefix install_dir
+# sau ./scripts/cmake.sh install
+```
+
+Vezi și [`scripts/cmake.sh`](scripts/cmake.sh).
+
+Observație: folderele `build/` și `install_dir/` sunt adăugate în fișierul `.gitignore` deoarece
+conțin fișiere generate și nu ne ajută să le versionăm.
+
+## Instrucțiuni pentru a rula executabilul
+
+Există mai multe variante:
+
+1. Din directorul de build (implicit `build`). Executabilul se află la locația `./build/oop_main` după ce a fost rulat pasul de compilare al proiectului (`./scripts/cmake.sh build` - pasul 2 de mai sus).
+
+```sh
+./build/oop_main
+```
+
+2. Din directorul `install_dir`. Executabilul se află la locația `./install_dir/bin/oop_main` după ce a fost rulat pasul de instalare (`./scripts/cmake.sh install` - pasul 4 de mai sus).
+
+```sh
+./install_dir/bin/oop_main
+```
+
+3. Rularea programului folosind Valgrind se poate face executând script-ul `./scripts/run_valgrind.sh` din rădăcina proiectului. Pe Windows acest script se poate rula folosind WSL (Windows Subsystem for Linux). Valgrind se poate rula în modul interactiv folosind: `RUN_INTERACTIVE=true ./scripts/run_valgrind.sh`
+
+Implicit, nu se rulează interactiv, iar datele pentru `std::cin` sunt preluate din fișierul `tastatura.txt`.
+
+```sh
+RUN_INTERACTIVE=true ./scripts/run_valgrind.sh
+# sau
+./scripts/run_valgrind.sh
+```
+
+Valgrind rulează și testele.
+
+4. Pentru a rula executabilul folosind ASan, este nevoie ca la pasul de configurare (vezi mai sus) să fie activat acest sanitizer. Ar trebui să meargă pe macOS și Linux. Pentru Windows, ar merge doar cu MSVC (nerecomandat).
+
+Comanda este aceeași ca la pasul 1 sau 2. Nu merge combinat cu Valgrind.
+
+```sh
+./build/oop_main
+./build/oop_test
+# sau
+./install_dir/bin/oop_main
+./install_dir/bin/oop_test
+```
+
 ## Resurse
 
 - adăugați trimiteri **detaliate** către resursele externe care v-au ajutat sau pe care le-ați folosit
