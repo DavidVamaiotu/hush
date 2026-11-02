@@ -4,12 +4,21 @@
 
 ### Descriere
 
-Hush recunoaște o melodie dintr-un fragment audio scurt (câteva secunde), în stilul Shazam.
-Aplicația construiește un index de amprente audio pentru o colecție de melodii: calculează
-spectrograma fiecărei melodii, extrage vârfurile de frecvență și le transformă în hash-uri.
-La căutare, fragmentul este amprentat la fel, iar melodia se identifică după hash-urile comune
-care apar la același decalaj în timp. Rezultatul este melodia și momentul din care provine
-fragmentul, chiar și când acesta conține zgomot de fundal.
+Hush recunoaște o melodie dintr-un fragment audio scurt (câteva secunde), în stilul Shazam:
+primește fragmentul și răspunde ce melodie este și din ce moment al ei provine.
+
+Abordarea este inspirată din articolul lui Avery Wang, *„An Industrial-Strength Audio Search
+Algorithm”* (2003), care descrie algoritmul din spatele Shazam:
+
+1. **Amprentare** — pentru fiecare melodie din colecție se calculează spectrograma, se aleg
+   vârfurile de frecvență cele mai puternice, iar perechile de vârfuri apropiate devin hash-uri.
+2. **Indexare** — hash-urile tuturor melodiilor sunt salvate într-un index, împreună cu melodia
+   și momentul în care apar.
+3. **Recunoaștere** — fragmentul este amprentat la fel, iar melodia câștigătoare este cea ale cărei
+   hash-uri se potrivesc cu ale fragmentului la același decalaj în timp.
+
+Ne propunem ca recunoașterea să funcționeze și pe fragmente cu zgomot de fundal sau volum diferit,
+iar rata de recunoaștere să fie măsurată și prezentată pe un set de fragmente de test.
 
 Melodiile folosite sunt cu licență liberă (Creative Commons), citate în secțiunea Resurse.
 
@@ -212,3 +221,4 @@ The [template repository](https://github.com/mcmarius/oop-template) itself is li
 ## Resurse
 
 - adăugați trimiteri **detaliate** către resursele externe care v-au ajutat sau pe care le-ați folosit
+- Avery Li-Chun Wang, *„An Industrial-Strength Audio Search Algorithm”*, ISMIR 2003 — articolul pe care se bazează algoritmul de recunoaștere: https://www.ee.columbia.edu/~dpwe/papers/Wang03-shazam.pdf
