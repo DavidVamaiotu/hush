@@ -60,7 +60,7 @@ class Sunet {
 
         friend std::ostream& operator<<(std::ostream& os, const Sunet& s)
         {
-            os << "Canale: "<<s.channels<<" "<<"Sample Rate: "<<s.sampleRate<<" "<<"Frame-uri: "<<s.totalPCMFrameCount/s.sampleRate;
+            os << "Canale: "<<s.channels<<" "<<"Sample Rate: "<<s.sampleRate<<" "<<"Durata: "<<s.totalPCMFrameCount/s.sampleRate;
             return os;
         }
 
