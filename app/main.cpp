@@ -17,7 +17,7 @@ class Sunet {
 
 
         // Deschidem fisierul, facem verificari si dupa initializam tabloul cu informatiile despre fisier
-        explicit Sunet(std::string filename) {
+        explicit Sunet(const std::string& filename) {
             float* pSampleData = drwav_open_file_and_read_pcm_frames_f32(filename.c_str(), &this->channels, &this->sampleRate, &this->totalPCMFrameCount, NULL);
 
             if (pSampleData == nullptr)
