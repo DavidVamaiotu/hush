@@ -47,6 +47,20 @@ class Sunet {
             std::copy(other.SampleData, other.SampleData + this->totalPCMFrameCount, this->SampleData);
         }
 
+        // operator=
+        Sunet& operator=(const Sunet& other) {
+            if (this == &other) {          // a = a;
+                return *this;
+            }
+            delete[] this->SampleData;               // eliberam ce aveam
+            this->channels = other.channels;
+            this->sampleRate = other.sampleRate;
+            this->totalPCMFrameCount = other.totalPCMFrameCount;
+            this->SampleData = new float[totalPCMFrameCount];       // alocal din nou
+            std::copy(other.SampleData, other.SampleData + totalPCMFrameCount, this->SampleData);
+            return *this;
+        }
+
 
         ~Sunet() { delete[] this->SampleData; }
 };
@@ -54,7 +68,9 @@ class Sunet {
 
 int main() {
    Sunet test("assets/melodii/test.wav");
+   Sunet test3("assets/melodii/test.wav");
    Sunet test2 = test;
-   std::cout<<"test";
+  
+   test = test3;
 
 }
