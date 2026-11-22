@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <vector>
 #define DR_WAV_IMPLEMENTATION
 #include <dr_wav.h>
 #include <pocketfft_hdronly.h>
@@ -8,7 +9,7 @@ class Sunet {
     unsigned int channels;
     unsigned int sampleRate;
     drwav_uint64 totalPCMFrameCount;
-    float* SampleData;
+    std::vector<float> SampleData;
 
 
     public:
@@ -33,8 +34,7 @@ class Sunet {
                throw std::runtime_error("Sunetul trebuie sa aiba sample rate-ul de 11025");
             }
 
-            this->SampleData = new float[totalPCMFrameCount];
-            std::copy(pSampleData, pSampleData + totalPCMFrameCount, SampleData);
+            SampleData.assign(pSampleData, pSampleData + totalPCMFrameCount);
 
             drwav_free(pSampleData, nullptr);
         }
@@ -42,27 +42,23 @@ class Sunet {
     
         //Constructor pentru a = b (copiere)
         Sunet(const Sunet& other)
-            : channels(other.channels), sampleRate(other.sampleRate), totalPCMFrameCount(other.totalPCMFrameCount), SampleData(new float[totalPCMFrameCount])
-        {
-            std::copy(other.SampleData, other.SampleData + this->totalPCMFrameCount, this->SampleData);
-        }
+            : channels(other.channels), sampleRate(other.sampleRate), totalPCMFrameCount(other.totalPCMFrameCount), SampleData(other.SampleData)
+        {}
 
         // operator=
         Sunet& operator=(const Sunet& other) {
             if (this == &other) {          // a = a;
                 return *this;
-            }
-            delete[] this->SampleData;               // eliberam ce aveam
+            }        
             this->channels = other.channels;
             this->sampleRate = other.sampleRate;
             this->totalPCMFrameCount = other.totalPCMFrameCount;
-            this->SampleData = new float[totalPCMFrameCount];       // alocal din nou
-            std::copy(other.SampleData, other.SampleData + totalPCMFrameCount, this->SampleData);
+            this->SampleData = other.SampleData;
             return *this;
         }
 
 
-        ~Sunet() { delete[] this->SampleData; }
+        ~Sunet() { }
 };
 
 
