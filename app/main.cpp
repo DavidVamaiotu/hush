@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <algorithm>
 #include <vector>
 #define DR_WAV_IMPLEMENTATION
@@ -16,8 +17,8 @@ class Sunet {
 
 
         // Deschidem fisierul, facem verificari si dupa initializam tabloul cu informatiile despre fisier
-        explicit Sunet(const char* filename) {
-            float* pSampleData = drwav_open_file_and_read_pcm_frames_f32(filename, &this->channels, &this->sampleRate, &this->totalPCMFrameCount, NULL);
+        explicit Sunet(std::string filename) {
+            float* pSampleData = drwav_open_file_and_read_pcm_frames_f32(filename.c_str(), &this->channels, &this->sampleRate, &this->totalPCMFrameCount, NULL);
 
             if (pSampleData == nullptr)
             {
@@ -63,10 +64,17 @@ class Sunet {
 
 
 int main() {
-   Sunet test("assets/melodii/test.wav");
-   Sunet test3("assets/melodii/test.wav");
-   Sunet test2 = test;
-  
-   test = test3;
+   std::string adresa_fisier1;
+   std::string adresa_fisier2;
 
+   std::cout<<"Adresa fisier 1: ";
+   std::cin >> adresa_fisier1;
+   std::cout<<"Adresa fisier 2: ";
+   std::cin >> adresa_fisier2;
+   
+   Sunet test(adresa_fisier1);
+   Sunet test3(adresa_fisier2);
+   Sunet test2 = test;
+
+   test = test3;
 }
