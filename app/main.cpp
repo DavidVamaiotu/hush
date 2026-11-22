@@ -18,7 +18,7 @@ class Sunet {
 
         // Deschidem fisierul, facem verificari si dupa initializam tabloul cu informatiile despre fisier
         explicit Sunet(const std::string& filename) {
-            float* pSampleData = drwav_open_file_and_read_pcm_frames_f32(filename.c_str(), &this->channels, &this->sampleRate, &this->totalPCMFrameCount, NULL);
+            float* pSampleData = drwav_open_file_and_read_pcm_frames_f32(filename.c_str(), &this->channels, &this->sampleRate, &this->totalPCMFrameCount, nullptr);
 
             if (pSampleData == nullptr)
             {
@@ -58,6 +58,12 @@ class Sunet {
             return *this;
         }
 
+        friend std::ostream& operator<<(std::ostream& os, const Sunet& s)
+        {
+            os << "Canale: "<<s.channels<<" "<<"Sample Rate: "<<s.sampleRate<<" "<<"Frame-uri: "<<s.totalPCMFrameCount/s.sampleRate;
+            return os;
+        }
+
 
         ~Sunet() { }
 };
@@ -77,4 +83,6 @@ int main() {
    Sunet test2 = test;
 
    test = test3;
+
+   std::cout << test << "\n";
 }
