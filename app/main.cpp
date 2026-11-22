@@ -6,6 +6,65 @@
 #include <dr_wav.h>
 #include <pocketfft_hdronly.h>
 
+
+class Spectrograma {
+    std::vector<std::vector<float>> values;
+    unsigned int sampleRate;
+
+    public:
+
+        static const unsigned int windowFrame = 1024;
+        static const unsigned int steps = 512;
+
+        explicit Spectrograma(const std::vector<float>& SampleData, const unsigned int& sampleRate)
+            : sampleRate(sampleRate)
+        {
+            if (SampleData.size() < windowFrame)
+                throw std::runtime_error("Numarul de sample-uri trebuie sa fie mai mare");
+ 
+            std::size_t windowFit = (SampleData.size() - windowFrame) / steps + 1;
+
+            for (std::size_t i = 0; i < windowFit; i++)
+            {
+                std::vector<std::complex<float>> temp(windowFrame/2+1);
+                pocketfft::r2c({windowFrame}, {sizeof(float)}, {sizeof(std::complex<float>)}, 0, pocketfft::FORWARD, SampleData.data() + i * steps, temp.data(), 1.0f);
+
+                std::vector<float> valuesOfValues(windowFrame/2+1);
+
+                for (std::size_t k = 0; k < temp.size(); k++)
+                {
+                    valuesOfValues[k] = std::abs(temp[k]);
+                }
+
+                values.push_back(valuesOfValues);
+            }
+
+
+
+        }
+
+        std::size_t biggestValuePosFromWindow(std::size_t window) const
+        {
+            if (window >= this->values.size()) 
+                throw std::runtime_error("Nu exista aceasta fereastra");
+
+
+            float maxv = this->values[window][0];
+            std::size_t pos = 0;
+            for (std::size_t i = 1; i < this->values[window].size(); i++)
+            {
+                float candidate = this->values[window][i];
+                if (candidate > maxv)
+                {
+                    maxv = candidate;
+                    pos = i;
+                }
+            }
+        
+            return pos;
+        }
+};
+
 class Sunet {
     unsigned int channels;
     unsigned int sampleRate;
@@ -65,6 +124,11 @@ class Sunet {
         }
 
 
+        Spectrograma calculeazaSpectrograma() const {
+            return Spectrograma(this->SampleData, this->sampleRate);
+        }
+
+
         ~Sunet() { }
 };
 
@@ -85,4 +149,7 @@ int main() {
    test = test3;
 
    std::cout << test << "\n";
+
+   Spectrograma spec = test.calculeazaSpectrograma();
+   std::cout<<spec.biggestValuePosFromWindow(0);
 }
