@@ -118,29 +118,6 @@ class Spectrograma {
 
         const static std::size_t nrPeaks = 3; 
 
-
-        //Cea mai puternica frecventa din fereastra data
-        std::size_t biggestValuePosFromWindow(std::size_t window) const
-        {
-            if (window >= this->values.size()) 
-                throw std::runtime_error("Nu exista aceasta fereastra");
-
-
-            float maxv = this->values[window][0];
-            std::size_t pos = 0;
-            for (std::size_t i = 1; i < this->values[window].size(); i++)
-            {
-                float candidate = this->values[window][i];
-                if (candidate > maxv)
-                {
-                    maxv = candidate;
-                    pos = i;
-                }
-            }
-        
-            return pos;
-        }
-
         long compara(const Spectrograma& spec) const
         {
             std::map<long, long> voturi;
@@ -172,9 +149,10 @@ class Spectrograma {
 
         friend std::ostream& operator<<(std::ostream& os, const Spectrograma& s)
         {
-            for (std::size_t i = 0; i < s.peaks.size(); i++)
+            os << "Ferestre: " << s.values.size() << '\n';
+            os << "Varfuri: " << s.peaks.size() << '\n';
+            for (std::size_t i = 0; i < nrPeaks; i++)
                 os << s.peaks[i] << '\n';
-            
             return os;
         }
 
@@ -189,7 +167,7 @@ class Sunet {
     public:
 
         // Deschidem fisierul, facem verificari si dupa initializam tabloul cu informatiile despre fisier
-        explicit Sunet(const std::string& filename) {
+        explicit Sunet (const std::string& filename) {
             float* pSampleData = drwav_open_file_and_read_pcm_frames_f32(filename.c_str(), &this->channels, &this->sampleRate, &this->totalPCMFrameCount, nullptr);
 
             if (pSampleData == nullptr)
@@ -274,31 +252,68 @@ class Melodie {
 int main() {
 
    try { 
+
+
+        long scor = 0;
+
         std::string adresa_fisier1;
         std::string adresa_fisier2;
 
-        std::cout<<"Adresa fisier 1: ";
-        std::getline(std::cin, adresa_fisier1);
-        std::cout<<"Adresa fisier 2: ";
-        std::getline(std::cin, adresa_fisier2);
+        std::cout<<"Adresa fragment: ";
+
+        if (!std::getline(std::cin, adresa_fisier1) || adresa_fisier1 == "0") {
+            return 0;
+        }
+
+        std::cout<<"Adresa melodie: ";
+
+        if (!std::getline(std::cin, adresa_fisier2)) {
+            return 0;
+        }
+
+        Melodie fragment(adresa_fisier1);
+        Melodie melodie(adresa_fisier2);
+
+        Melodie best = fragment;
+
+
+        while (true) 
+        {
+            std::cout<<"--------"<<'\n';
+            std::cout<<melodie;
+            std::cout<<"--------"<<'\n';
+            std::cout<<fragment;
+            std::cout<<"--------"<<'\n';
+            
+
+            long cmp = melodie.scorComparatie(fragment);
+
+            std::cout<<"Scor potrivire: "<< cmp << '\n';
+            std::cout<<"--------"<<'\n';
+
+            if (cmp > scor)
+            {
+                scor = cmp;
+                best = fragment;
+            }
+
+            std::cout<<"Adresa fragment: ";
+
+            if (!std::getline(std::cin, adresa_fisier1) || adresa_fisier1 == "0") {
+                std::cout<<"--------"<<'\n';
+                std::cout << "Fragmentul care se potriveste cel mai bine: " << best << '\n';
+                std::cout<<"--------"<<'\n';
+                std::cout << "Cu scorul: " << scor << '\n'; 
+                std::cout<<"--------"<<'\n';
+                return 0;
+            }
+
+            fragment = Melodie(adresa_fisier1);
         
-        Sunet test(adresa_fisier1);
-        Sunet test3(adresa_fisier2);
-        Sunet test2 = test;
+        }
 
-        test = test3;
 
-        Spectrograma spec = test.calculeazaSpectrograma();
-        std::cout << spec.biggestValuePosFromWindow(0) << '\n';
-
-        Melodie ml1(adresa_fisier1);
-        Melodie ml2(adresa_fisier2);
-
-        std::cout<<ml2;
-        std::cout<<ml1;
-
-        std::cout<<ml2.scorComparatie(ml1);
-        
+       
     } catch(const std::exception& e) {
         std::cerr << "Eroare: " << e.what() << "\n";
         return 1;
