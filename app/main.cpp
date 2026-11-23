@@ -5,7 +5,8 @@
 #define DR_WAV_IMPLEMENTATION
 #include <dr_wav.h>
 #include <pocketfft_hdronly.h>
-
+#include <complex> 
+#include <stdexcept>
 
 
 // Clasa pentru cele mai puternice frecvente, pentru ca nu trebuie sa stim toate frecventele, doar pe cele mai puternice
@@ -37,7 +38,7 @@ class Spectrograma {
 
         //Fereastra pe care o citim
         static const unsigned int windowFrame = 1024;
-        //512 pasi deoarece FFT returneaza doar 513 valori, cealalta parte fiind oglindita
+        // Pasul dintre ferestre, ne mutam cu jumatate de fereastra, ca ferestrele sa se suprapuna
         static const unsigned int steps = 512;
 
 
@@ -70,7 +71,7 @@ class Spectrograma {
 
         }
 
-        void searchForMaxAndPosInInterval(const std::size_t start, const std::size_t end, const std::vector<float>& v, float& maxv, std::size_t& pos)
+        static void searchForMaxAndPosInInterval(const std::size_t start, const std::size_t end, const std::vector<float>& v, float& maxv, std::size_t& pos)
         {
             for (std::size_t i = start; i < end; i++)
             {
@@ -85,21 +86,22 @@ class Spectrograma {
 
         // Cautam varfurile in fiecare fereastra, deoarece ne intereseaza doar cele mai puternice frecvente
         void findPeaks() {
-            float maxv;
-            std::size_t pos;
-
+        
             for (std::size_t i = 0; i < this->values.size(); i++)
             {
-                std::size_t steps = this->values[i].size() / nrPeaks;
+                std::size_t bandWitdth = this->values[i].size() / nrPeaks;
 
                 for (std::size_t j = 0; j < nrPeaks; j++)
                 {
-                    std::size_t start = steps*j;
-                    std::size_t end = steps*(j+1);
+                    float maxv;
+                    std::size_t pos;
+
+                    std::size_t start = bandWitdth*j;
+                    std::size_t end = bandWitdth*(j+1);
                     if (j == nrPeaks-1) end = this->values[i].size(); 
 
-                    maxv = this->values[i][steps * j];
-                    pos = steps*j;
+                    maxv = this->values[i][bandWitdth * j];
+                    pos = bandWitdth*j;
                     searchForMaxAndPosInInterval(start, end, this->values[i], maxv, pos);
                     Varf vf(i, pos * sampleRate / windowFrame, maxv);
                     this->peaks.push_back(vf);
@@ -175,7 +177,7 @@ class Sunet {
         }
 
     
-        //Constructor pentru a = b (copiere)
+        //Constructor pentru b = a (copiere)
         Sunet(const Sunet& other)
             : channels(other.channels), sampleRate(other.sampleRate), totalPCMFrameCount(other.totalPCMFrameCount), SampleData(other.SampleData)
         {}
@@ -208,27 +210,55 @@ class Sunet {
 };
 
 
+class Melodie {
+    std::string adresaFisier;
+    Sunet sound;
+    Spectrograma spec;
+
+    public:
+
+        explicit Melodie(const std::string& adresa)
+            : adresaFisier(adresa), sound(adresa), spec(sound.calculeazaSpectrograma()) 
+        {
+            spec.findPeaks();
+        }
+
+         friend std::ostream& operator<<(std::ostream& os, const Melodie& s)
+        {
+            os << s.adresaFisier << "\n" << s.sound << "\n" << s.spec;
+            return os;
+        }
+};
+
+
 int main() {
-   std::string adresa_fisier1;
-   std::string adresa_fisier2;
 
-   std::cout<<"Adresa fisier 1: ";
-   std::cin >> adresa_fisier1;
-   std::cout<<"Adresa fisier 2: ";
-   std::cin >> adresa_fisier2;
-   
-   Sunet test(adresa_fisier1);
-   Sunet test3(adresa_fisier2);
-   Sunet test2 = test;
+   try { 
+        std::string adresa_fisier1;
+        std::string adresa_fisier2;
 
-   test = test3;
+        std::cout<<"Adresa fisier 1: ";
+        std::cin >> adresa_fisier1;
+        std::cout<<"Adresa fisier 2: ";
+        std::cin >> adresa_fisier2;
+        
+        Sunet test(adresa_fisier1);
+        Sunet test3(adresa_fisier2);
+        Sunet test2 = test;
 
-   std::cout << test << '\n';
+        test = test3;
 
-   Spectrograma spec = test.calculeazaSpectrograma();
-   std::cout << spec.biggestValuePosFromWindow(0) << '\n';
-   spec.findPeaks();
+        Spectrograma spec = test.calculeazaSpectrograma();
+        std::cout << spec.biggestValuePosFromWindow(0) << '\n';
 
-   std::cout << spec;
+        Melodie ml(adresa_fisier1);
+
+        std::cout<<ml;
+        
+    } catch(const std::exception& e) {
+        std::cerr << "Eroare: " << e.what() << "\n";
+        return 1;
+    }
+
 
 }
