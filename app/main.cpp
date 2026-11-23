@@ -39,6 +39,43 @@ class Spectrograma {
     unsigned int sampleRate;
     std::vector<Varf> peaks;
 
+
+     //Cautam max si pos pentru varfuri
+    static void searchForMaxAndPosInInterval(const std::size_t start, const std::size_t end, const std::vector<float>& v, float& maxv, std::size_t& pos)
+    {
+        for (std::size_t i = start; i < end; i++)
+        {
+            if (v[i] > maxv)
+            {
+                maxv = v[i], pos = i;
+            }
+        }
+    }
+
+    // Cautam varfurile in fiecare fereastra, cate 3, deoarece ne intereseaza doar cele mai puternice frecvente
+    void findPeaks() {
+            for (std::size_t i = 0; i < this->values.size(); i++)
+            {
+                std::size_t bandWitdth = this->values[i].size() / nrPeaks;
+
+                for (std::size_t j = 0; j < nrPeaks; j++)
+                {
+                    float maxv;
+                    std::size_t pos;
+
+                    std::size_t start = bandWitdth*j;
+                    std::size_t end = bandWitdth*(j+1);
+                    if (j == nrPeaks-1) end = this->values[i].size(); 
+
+                    maxv = this->values[i][bandWitdth * j];
+                    pos = bandWitdth*j;
+                    searchForMaxAndPosInInterval(start, end, this->values[i], maxv, pos);
+                    Varf vf(static_cast<long>(i), static_cast<unsigned int>(pos * sampleRate / windowFrame), maxv);
+                    this->peaks.push_back(vf);
+                }
+            }
+        }
+
     public:
 
         //Fereastra pe care o citim
@@ -74,46 +111,12 @@ class Spectrograma {
                 values.push_back(valuesOfValues);
             }
 
+            this->findPeaks();
         }
 
-        //Cautam max si pos pentru varfuri
-        static void searchForMaxAndPosInInterval(const std::size_t start, const std::size_t end, const std::vector<float>& v, float& maxv, std::size_t& pos)
-        {
-            for (std::size_t i = start; i < end; i++)
-            {
-                if (v[i] > maxv)
-                {
-                    maxv = v[i], pos = i;
-                }
-            }
-        }
+       
 
         const static std::size_t nrPeaks = 3; 
-
-        // Cautam varfurile in fiecare fereastra, cate 3, deoarece ne intereseaza doar cele mai puternice frecvente
-        void findPeaks() {
-        
-            for (std::size_t i = 0; i < this->values.size(); i++)
-            {
-                std::size_t bandWitdth = this->values[i].size() / nrPeaks;
-
-                for (std::size_t j = 0; j < nrPeaks; j++)
-                {
-                    float maxv;
-                    std::size_t pos;
-
-                    std::size_t start = bandWitdth*j;
-                    std::size_t end = bandWitdth*(j+1);
-                    if (j == nrPeaks-1) end = this->values[i].size(); 
-
-                    maxv = this->values[i][bandWitdth * j];
-                    pos = bandWitdth*j;
-                    searchForMaxAndPosInInterval(start, end, this->values[i], maxv, pos);
-                    Varf vf(static_cast<long>(i), static_cast<unsigned int>(pos * sampleRate / windowFrame), maxv);
-                    this->peaks.push_back(vf);
-                }
-            }
-        }
 
 
         //Cea mai puternica frecventa din fereastra data
@@ -252,9 +255,7 @@ class Melodie {
 
         explicit Melodie(const std::string& adresa)
             : adresaFisier(adresa), sound(adresa), spec(sound.calculeazaSpectrograma()) 
-        {
-            spec.findPeaks();
-        }
+        { }
 
         long scorComparatie(const Melodie& m2) const
         {
