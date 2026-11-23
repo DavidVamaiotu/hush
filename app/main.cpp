@@ -7,23 +7,52 @@
 #include <pocketfft_hdronly.h>
 
 
+
+// Clasa pentru cele mai puternice frecvente, pentru ca nu trebuie sa stim toate frecventele, doar pe cele mai puternice
+class Varf {
+    std::size_t windowFrame;
+    unsigned int freq;
+    float power;
+
+    public:
+        explicit Varf(const std::size_t windowFrame, const unsigned int freq, const float power)
+            : windowFrame(windowFrame), freq(freq), power(power)
+        {}
+
+    friend std::ostream& operator<<(std::ostream& os, const Varf& s)
+    {
+        os << "Fereastra: "<<s.windowFrame<<" "<<"Frecventa: "<<s.freq<<" "<<"Putere semnal: "<<s.power;
+        return os;
+    }
+};
+
+
+// Spectograma care e calculata prin fast fourier transform
 class Spectrograma {
     std::vector<std::vector<float>> values;
     unsigned int sampleRate;
+    std::vector<Varf> peaks;
 
     public:
 
+        //Fereastra pe care o citim
         static const unsigned int windowFrame = 1024;
+        //512 pasi deoarece FFT returneaza doar 513 valori, cealalta parte fiind oglindita
         static const unsigned int steps = 512;
 
+
+        //Constructor prin care aplicam FFT sa obtinem puterea frecventelor din fiecare fereastra
         explicit Spectrograma(const std::vector<float>& SampleData, const unsigned int& sampleRate)
             : sampleRate(sampleRate)
         {
             if (SampleData.size() < windowFrame)
                 throw std::runtime_error("Numarul de sample-uri trebuie sa fie mai mare");
  
+
+            //Vedem cate ferestre incap
             std::size_t windowFit = (SampleData.size() - windowFrame) / steps + 1;
 
+            //Calculam FFT pentru fiecare fereastra si apoi pastram rezultatele intr-un vector de vectori de float (randul = timpul si coloana = puterea frecventelor)
             for (std::size_t i = 0; i < windowFit; i++)
             {
                 std::vector<std::complex<float>> temp(windowFrame/2+1);
@@ -39,10 +68,47 @@ class Spectrograma {
                 values.push_back(valuesOfValues);
             }
 
-
-
         }
 
+        void searchForMaxAndPosInInterval(const std::size_t start, const std::size_t end, const std::vector<float>& v, float& maxv, std::size_t& pos)
+        {
+            for (std::size_t i = start; i < end; i++)
+            {
+                if (v[i] > maxv)
+                {
+                    maxv = v[i], pos = i;
+                }
+            }
+        }
+
+        const static std::size_t nrPeaks = 3; 
+
+        // Cautam varfurile in fiecare fereastra, deoarece ne intereseaza doar cele mai puternice frecvente
+        void findPeaks() {
+            float maxv;
+            std::size_t pos;
+
+            for (std::size_t i = 0; i < this->values.size(); i++)
+            {
+                std::size_t steps = this->values[i].size() / nrPeaks;
+
+                for (std::size_t j = 0; j < nrPeaks; j++)
+                {
+                    std::size_t start = steps*j;
+                    std::size_t end = steps*(j+1);
+                    if (j == nrPeaks-1) end = this->values[i].size(); 
+
+                    maxv = this->values[i][steps * j];
+                    pos = steps*j;
+                    searchForMaxAndPosInInterval(start, end, this->values[i], maxv, pos);
+                    Varf vf(i, pos * sampleRate / windowFrame, maxv);
+                    this->peaks.push_back(vf);
+                }
+            }
+        }
+
+
+        //Cea mai puternica frecventa din fereastra
         std::size_t biggestValuePosFromWindow(std::size_t window) const
         {
             if (window >= this->values.size()) 
@@ -63,6 +129,15 @@ class Spectrograma {
         
             return pos;
         }
+
+        friend std::ostream& operator<<(std::ostream& os, const Spectrograma& s)
+        {
+            for (std::size_t i = 0; i < s.peaks.size(); i++)
+                os << s.peaks[i] << '\n';
+            
+            return os;
+        }
+
 };
 
 class Sunet {
@@ -148,8 +223,12 @@ int main() {
 
    test = test3;
 
-   std::cout << test << "\n";
+   std::cout << test << '\n';
 
    Spectrograma spec = test.calculeazaSpectrograma();
-   std::cout<<spec.biggestValuePosFromWindow(0);
+   std::cout << spec.biggestValuePosFromWindow(0) << '\n';
+   spec.findPeaks();
+
+   std::cout << spec;
+
 }
