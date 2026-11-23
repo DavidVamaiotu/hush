@@ -7,28 +7,33 @@
 #include <pocketfft_hdronly.h>
 #include <complex> 
 #include <stdexcept>
+#include <map>
 
 
 // Clasa pentru cele mai puternice frecvente, pentru ca nu trebuie sa stim toate frecventele, doar pe cele mai puternice
 class Varf {
-    std::size_t windowFrame;
+    long windowFrame;
     unsigned int freq;
     float power;
 
     public:
-        explicit Varf(const std::size_t windowFrame, const unsigned int freq, const float power)
+        explicit Varf(const long windowFrame, const unsigned int freq, const float power)
             : windowFrame(windowFrame), freq(freq), power(power)
         {}
 
-    friend std::ostream& operator<<(std::ostream& os, const Varf& s)
-    {
-        os << "Fereastra: "<<s.windowFrame<<" "<<"Frecventa: "<<s.freq<<" "<<"Putere semnal: "<<s.power;
-        return os;
-    }
-};
+        friend std::ostream& operator<<(std::ostream& os, const Varf& s)
+        {
+            os << "Fereastra: "<<s.windowFrame<<" "<<"Frecventa: "<<s.freq<<" "<<"Putere semnal: "<<s.power;
+            return os;
+        }
+
+        bool egal(const Varf& vf2) const { return this->freq == vf2.freq; }
+
+        long diferenta(const Varf& vf2) const { return this->windowFrame - vf2.windowFrame; }
+    };
 
 
-// Spectograma care e calculata prin fast fourier transform
+// Spectrograma care e calculata prin fast fourier transform
 class Spectrograma {
     std::vector<std::vector<float>> values;
     unsigned int sampleRate;
@@ -71,6 +76,7 @@ class Spectrograma {
 
         }
 
+        //Cautam max si pos pentru varfuri
         static void searchForMaxAndPosInInterval(const std::size_t start, const std::size_t end, const std::vector<float>& v, float& maxv, std::size_t& pos)
         {
             for (std::size_t i = start; i < end; i++)
@@ -84,7 +90,7 @@ class Spectrograma {
 
         const static std::size_t nrPeaks = 3; 
 
-        // Cautam varfurile in fiecare fereastra, deoarece ne intereseaza doar cele mai puternice frecvente
+        // Cautam varfurile in fiecare fereastra, cate 3, deoarece ne intereseaza doar cele mai puternice frecvente
         void findPeaks() {
         
             for (std::size_t i = 0; i < this->values.size(); i++)
@@ -103,14 +109,14 @@ class Spectrograma {
                     maxv = this->values[i][bandWitdth * j];
                     pos = bandWitdth*j;
                     searchForMaxAndPosInInterval(start, end, this->values[i], maxv, pos);
-                    Varf vf(i, pos * sampleRate / windowFrame, maxv);
+                    Varf vf(static_cast<long>(i), static_cast<unsigned int>(pos * sampleRate / windowFrame), maxv);
                     this->peaks.push_back(vf);
                 }
             }
         }
 
 
-        //Cea mai puternica frecventa din fereastra
+        //Cea mai puternica frecventa din fereastra data
         std::size_t biggestValuePosFromWindow(std::size_t window) const
         {
             if (window >= this->values.size()) 
@@ -132,6 +138,35 @@ class Spectrograma {
             return pos;
         }
 
+        long compara(const Spectrograma& spec) const
+        {
+            std::map<long, long> voturi;
+            for (std::size_t i = 0; i < spec.peaks.size(); i++)
+            {
+                for (std::size_t j = 0; j < this->peaks.size(); j++)
+                {
+                    
+                    const Varf& vf1 = this->peaks[j];
+                    const Varf& vf2 = spec.peaks[i];
+
+                    if (vf1.egal(vf2))
+                    {   
+                        long decalaj = vf1.diferenta(vf2);
+                        voturi[decalaj]++;
+                    }
+                }
+            }
+            long maxv = 0;
+            for (const auto& [dec, vot] : voturi)
+            {
+                  if (vot > maxv)
+                  {
+                     maxv = vot;
+                  }
+            }
+            return maxv;
+        }
+
         friend std::ostream& operator<<(std::ostream& os, const Spectrograma& s)
         {
             for (std::size_t i = 0; i < s.peaks.size(); i++)
@@ -148,9 +183,7 @@ class Sunet {
     drwav_uint64 totalPCMFrameCount;
     std::vector<float> SampleData;
 
-
     public:
-
 
         // Deschidem fisierul, facem verificari si dupa initializam tabloul cu informatiile despre fisier
         explicit Sunet(const std::string& filename) {
@@ -223,6 +256,12 @@ class Melodie {
             spec.findPeaks();
         }
 
+        long scorComparatie(const Melodie& m2) const
+        {
+            return this->spec.compara(m2.spec);
+        }
+
+
          friend std::ostream& operator<<(std::ostream& os, const Melodie& s)
         {
             os << s.adresaFisier << "\n" << s.sound << "\n" << s.spec;
@@ -238,9 +277,9 @@ int main() {
         std::string adresa_fisier2;
 
         std::cout<<"Adresa fisier 1: ";
-        std::cin >> adresa_fisier1;
+        std::getline(std::cin, adresa_fisier1);
         std::cout<<"Adresa fisier 2: ";
-        std::cin >> adresa_fisier2;
+        std::getline(std::cin, adresa_fisier2);
         
         Sunet test(adresa_fisier1);
         Sunet test3(adresa_fisier2);
@@ -251,14 +290,16 @@ int main() {
         Spectrograma spec = test.calculeazaSpectrograma();
         std::cout << spec.biggestValuePosFromWindow(0) << '\n';
 
-        Melodie ml(adresa_fisier1);
+        Melodie ml1(adresa_fisier1);
+        Melodie ml2(adresa_fisier2);
 
-        std::cout<<ml;
+        std::cout<<ml2;
+        std::cout<<ml1;
+
+        std::cout<<ml2.scorComparatie(ml1);
         
     } catch(const std::exception& e) {
         std::cerr << "Eroare: " << e.what() << "\n";
         return 1;
     }
-
-
 }
