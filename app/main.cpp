@@ -33,6 +33,12 @@ class Varf {
     };
 
 
+// Structura pentru a returna secunda de cand incepe fragmentul relativ la melodie si scorul acestuia
+struct RezultatPotrivire {
+    long scor;
+    float secundaStart;
+};
+
 // Spectrograma care e calculata prin fast fourier transform
 class Spectrograma {
     std::vector<std::vector<float>> values;
@@ -50,6 +56,11 @@ class Spectrograma {
                 maxv = v[i], pos = i;
             }
         }
+    }
+
+
+    float gasesteDecalajInSecunde(long decalaj_) const {
+        return static_cast<float>(this->steps) * decalaj_ / this->sampleRate;
     }
 
     // Cautam varfurile in fiecare fereastra, cate 3, deoarece ne intereseaza doar cele mai puternice frecvente
@@ -83,6 +94,8 @@ class Spectrograma {
         // Pasul dintre ferestre, ne mutam cu jumatate de fereastra, ca ferestrele sa se suprapuna
         static const unsigned int steps = 512;
 
+
+ 
 
         //Constructor prin care aplicam FFT sa obtinem puterea frecventelor din fiecare fereastra
         explicit Spectrograma(const std::vector<float>& SampleData, const unsigned int& sampleRate)
@@ -118,7 +131,7 @@ class Spectrograma {
 
         const static std::size_t nrPeaks = 3; 
 
-        long compara(const Spectrograma& spec) const
+        RezultatPotrivire compara(const Spectrograma& spec) const
         {
             std::map<long, long> voturi;
             for (std::size_t i = 0; i < spec.peaks.size(); i++)
@@ -136,15 +149,17 @@ class Spectrograma {
                     }
                 }
             }
-            long maxv = 0;
+            long maxv = 0, decalajCastigator = 0;
             for (const auto& [dec, vot] : voturi)
             {
                   if (vot > maxv)
                   {
                      maxv = vot;
+                     decalajCastigator = dec;
                   }
             }
-            return maxv;
+
+            return RezultatPotrivire {maxv, gasesteDecalajInSecunde(decalajCastigator)};
         }
 
         friend std::ostream& operator<<(std::ostream& os, const Spectrograma& s)
@@ -235,9 +250,15 @@ class Melodie {
             : adresaFisier(adresa), sound(adresa), spec(sound.calculeazaSpectrograma()) 
         { }
 
+        //Cat de bine se potriveste fragmentul cu melodia
         long scorComparatie(const Melodie& m2) const
         {
-            return this->spec.compara(m2.spec);
+            return this->spec.compara(m2.spec).scor;
+        }
+
+        // La ce secunda se afla fragmentul relativ la melodie
+        float fragmentRelativMelodie(const Melodie& m2) const {
+            return this->spec.compara(m2.spec).secundaStart;
         }
 
 
@@ -254,7 +275,7 @@ int main() {
    try { 
 
 
-        long scor = 0;
+        long scorMax = 0;
 
         std::string adresa_fisier1;
         std::string adresa_fisier2;
@@ -274,7 +295,7 @@ int main() {
         Melodie fragment(adresa_fisier1);
         Melodie melodie(adresa_fisier2);
 
-        Melodie best = fragment;
+        Melodie bestMatch = fragment;
 
 
         while (true) 
@@ -286,24 +307,31 @@ int main() {
             std::cout<<"--------"<<'\n';
             
 
-            long cmp = melodie.scorComparatie(fragment);
+            long scorCmp = melodie.scorComparatie(fragment);
 
-            std::cout<<"Scor potrivire: "<< cmp << '\n';
-            std::cout<<"--------"<<'\n';
-
-            if (cmp > scor)
+            if (scorCmp == 0)
             {
-                scor = cmp;
-                best = fragment;
+                std::cout<<"Fragmentul nu a fost gasit in melodie"<<'\n';
+            }
+            else {
+                 std::cout<<"Scor potrivire: "<< scorCmp << '\n';
+                 std::cout<<"Fragmentul incepe la secunda: "<< melodie.fragmentRelativMelodie(fragment) << '\n';
+                 std::cout<<"--------"<<'\n';
+
+                if (scorCmp > scorMax)
+                {
+                    scorMax = scorCmp;
+                    bestMatch = fragment;
+                }
             }
 
             std::cout<<"Adresa fragment: ";
 
             if (!std::getline(std::cin, adresa_fisier1) || adresa_fisier1 == "0") {
                 std::cout<<"--------"<<'\n';
-                std::cout << "Fragmentul care se potriveste cel mai bine: " << best << '\n';
+                std::cout << "Fragmentul care se potriveste cel mai bine: " << bestMatch << '\n';
                 std::cout<<"--------"<<'\n';
-                std::cout << "Cu scorul: " << scor << '\n'; 
+                std::cout << "Cu scorul: " << scorMax << '\n'; 
                 std::cout<<"--------"<<'\n';
                 return 0;
             }
@@ -311,7 +339,6 @@ int main() {
             fragment = Melodie(adresa_fisier1);
         
         }
-
 
        
     } catch(const std::exception& e) {
