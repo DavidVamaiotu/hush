@@ -37,6 +37,7 @@ class Varf {
 struct RezultatPotrivire {
     long scor;
     float secundaStart;
+    float procent;
 };
 
 // Spectrograma care e calculata prin fast fourier transform
@@ -159,7 +160,7 @@ class Spectrograma {
                   }
             }
 
-            return RezultatPotrivire {maxv, gasesteDecalajInSecunde(decalajCastigator)};
+            return RezultatPotrivire {maxv, gasesteDecalajInSecunde(decalajCastigator), static_cast<float>(maxv) / spec.peaks.size() * 100};
         }
 
         friend std::ostream& operator<<(std::ostream& os, const Spectrograma& s)
@@ -203,6 +204,34 @@ class Sunet {
             SampleData.assign(pSampleData, pSampleData + totalPCMFrameCount);
 
             drwav_free(pSampleData, nullptr);
+        }
+
+
+        Sunet(unsigned int channels_, unsigned int sampleRate_, const std::vector<float>& SampleData_)
+            : channels(channels_), sampleRate(sampleRate_), totalPCMFrameCount(SampleData_.size()), SampleData(SampleData_)
+        {}
+
+
+
+        Sunet taieFragment(float secundaStart, float durata) const {
+            if (secundaStart < 0 || durata < 0)
+                throw std::runtime_error("Secunda de start sau durata nu pot fi negative");
+    
+            std::size_t nrEsantioaneStart = static_cast<std::size_t>(secundaStart * this->sampleRate);
+            std::size_t nrEsantioaneDurata = static_cast<std::size_t>(durata * this->sampleRate);
+
+            std::size_t nrEsantioaneMelodie = this->SampleData.size();
+
+            if (nrEsantioaneStart + nrEsantioaneDurata > nrEsantioaneMelodie)
+                throw std::runtime_error("Fragmentul nu poate fi mai lung decat melodia");
+
+            if (nrEsantioaneDurata < Spectrograma::windowFrame)
+                throw std::runtime_error("Durata e prea scurta");
+
+            std::vector<float> sampleDataFragment(this->SampleData.begin() + nrEsantioaneStart, this->SampleData.begin() + nrEsantioaneStart + nrEsantioaneDurata);
+
+            return Sunet(this->channels, this->sampleRate, sampleDataFragment);
+
         }
 
     
@@ -250,15 +279,29 @@ class Melodie {
             : adresaFisier(adresa), sound(adresa), spec(sound.calculeazaSpectrograma()) 
         { }
 
+
+        Melodie(const std::string& adresa, const Sunet& s)
+            : adresaFisier(adresa), sound(s), spec(sound.calculeazaSpectrograma()) 
+        { }
+
+
         //Cat de bine se potriveste fragmentul cu melodia
         long scorComparatie(const Melodie& m2) const
         {
             return this->spec.compara(m2.spec).scor;
         }
 
+        //Pragul pentru care un fragment e recunoscut ca facand parte dintr-o melodie
+        static constexpr float pragComparatie = 30.0f;
+
         // La ce secunda se afla fragmentul relativ la melodie
         float fragmentRelativMelodie(const Melodie& m2) const {
             return this->spec.compara(m2.spec).secundaStart;
+        }
+
+        float procentPotrivire(const Melodie& m2) const
+        {
+            return this->spec.compara(m2.spec).procent;
         }
 
 
@@ -315,24 +358,49 @@ int main() {
             }
             else {
                  std::cout<<"Scor potrivire: "<< scorCmp << '\n';
-                 std::cout<<"Fragmentul incepe la secunda: "<< melodie.fragmentRelativMelodie(fragment) << '\n';
-                 std::cout<<"--------"<<'\n';
 
-                if (scorCmp > scorMax)
+                if (melodie.procentPotrivire(fragment) < Melodie::pragComparatie)
+                    std::cout<<"Fragmentul nu face parte din melodie" << '\n';
+                else 
                 {
-                    scorMax = scorCmp;
-                    bestMatch = fragment;
+                    std::cout<<"Fragmentul incepe la secunda: "<< melodie.fragmentRelativMelodie(fragment) << '\n';
+                    std::cout<<"--------"<<'\n';
+                    
+                    if (scorCmp > scorMax)
+                    {
+                        scorMax = scorCmp;
+                        bestMatch = fragment;
+                    }
                 }
+                
             }
 
             std::cout<<"Adresa fragment: ";
 
             if (!std::getline(std::cin, adresa_fisier1) || adresa_fisier1 == "0") {
-                std::cout<<"--------"<<'\n';
-                std::cout << "Fragmentul care se potriveste cel mai bine: " << bestMatch << '\n';
-                std::cout<<"--------"<<'\n';
+                std::cout << '\n';
+                std::cout << "--------"<<'\n';
+                std::cout << "Fragmentul care se potriveste cel mai bine: " << bestMatch;
                 std::cout << "Cu scorul: " << scorMax << '\n'; 
                 std::cout<<"--------"<<'\n';
+
+                Sunet fragmentTaiat(adresa_fisier2);
+
+                float secundaStart = 0, durata = 0;
+
+                std::cout << "Secunda la care sari: " << '\n';
+                std::cin >> secundaStart;
+                std::cout << "Durata: " << '\n';
+                std::cin >> durata;
+                std::cout<<"--------"<<'\n' << '\n';
+
+                fragmentTaiat = fragmentTaiat.taieFragment(secundaStart, durata);
+
+                Melodie melodieTaiata("fragment incepand cu secunda " + std::to_string(secundaStart), fragmentTaiat);
+
+                std::cout<<"Fragment taiat la " << secundaStart << ", gasit la secunda: " << melodie.fragmentRelativMelodie(melodieTaiata) << '\n';
+
+
                 return 0;
             }
 
