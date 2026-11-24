@@ -62,7 +62,7 @@ O cerință nu se consideră îndeplinită dacă este realizată doar prin cod g
 - [x] scenariu de utilizare **cu sens** a claselor definite:
   - crearea de obiecte și apelarea tuturor funcțiilor membru publice în main
   - vor fi adăugate în fișierul `tastatura.txt` DOAR exemple de date de intrare de la tastatură (dacă există); dacă aveți nevoie de date din fișiere, creați alte fișiere separat
-- [ ] minim 52-60% din codul propriu să fie C++; testele nu se pun
+- [x] minim 52-60% din codul propriu să fie C++; testele nu se pun
 - [x] `.gitattributes` configurat corect (nu trebuie făcute modificări aici)
 - [x] tag de `git`: de exemplu `v0.1`
 - [x] serviciu de integrare continuă (CI) cu **toate bifele**; exemplu: GitHub Actions
